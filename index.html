@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindFlow - Interactive Mind Map Generator</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2.5'><circle cx='12' cy='12' r='3'></circle><circle cx='19' cy='5' r='2'></circle><circle cx='5' cy='5' r='2'></circle><circle cx='19' cy='19' r='2'></circle><circle cx='5' cy='19' r='2'></circle><line x1='12' y1='9' x2='12' y2='15'></line><line x1='10' y1='10' x2='6.5' y2='6.5'></line><line x1='14' y1='10' x2='17.5' y2='6.5'></line><line x1='10' y1='14' x2='6.5' y2='17.5'></line><line x1='14' y1='14' x2='17.5' y2='17.5'></line></svg>">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body class="light-mode">
+    <!-- Main Application Wrapper -->
+    <div class="app-container">
+        <!-- Top Navigation / Toolbar -->
+        <header class="top-bar">
+            <div class="top-left">
+                <div class="brand">
+                    <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <circle cx="19" cy="5" r="2"></circle>
+                        <circle cx="5" cy="5" r="2"></circle>
+                        <circle cx="19" cy="19" r="2"></circle>
+                        <circle cx="5" cy="19" r="2"></circle>
+                        <line x1="12" y1="9" x2="12" y2="15"></line>
+                        <line x1="10" y1="10" x2="6.5" y2="6.5"></line>
+                        <line x1="14" y1="10" x2="17.5" y2="6.5"></line>
+                        <line x1="10" y1="14" x2="6.5" y2="17.5"></line>
+                        <line x1="14" y1="14" x2="17.5" y2="17.5"></line>
+                    </svg>
+                    <span class="brand-title">MindFlow</span>
+                </div>
+                <div class="map-title-wrapper">
+                    <input type="text" id="mapTitleInput" class="map-title-input" value="My Mind Map" title="Click to rename mind map">
+                    <span id="saveStatus" class="save-status">Auto-saved</span>
+                </div>
+            </div>
+
+            <div class="top-center">
+                <!-- Node Operations -->
+                <div class="toolbar-group">
+                    <button id="addChildBtn" class="btn btn-primary" title="Add Child Node (Tab)">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        <span>Child</span>
+                        <kbd>Tab</kbd>
+                    </button>
+                    <button id="addSiblingBtn" class="btn btn-secondary" title="Add Sibling Node (Enter)">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        <span>Sibling</span>
+                        <kbd>Enter</kbd>
+                    </button>
+                    <button id="deleteNodeBtn" class="btn btn-danger" title="Delete Selected Node (Del)">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        <span>Delete</span>
+                        <kbd>Del</kbd>
+                    </button>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- History Operations -->
+                <div class="toolbar-group">
+                    <button id="undoBtn" class="btn btn-icon" title="Undo (Ctrl+Z)" disabled>
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                    </button>
+                    <button id="redoBtn" class="btn btn-icon" title="Redo (Ctrl+Y)" disabled>
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                    </button>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- Customization Operations -->
+                <div class="toolbar-group">
+                    <div class="dropdown-wrapper">
+                        <button id="paletteBtn" class="btn btn-secondary" title="Color Theme">
+                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2z"></path></svg>
+                            <span>Themes</span>
+                        </button>
+                        <div id="paletteDropdown" class="dropdown-menu theme-menu">
+                            <div class="menu-header">Color Palette</div>
+                            <div class="theme-options">
+                                <button class="theme-option active" data-palette="vibrant">
+                                    <span class="preview-palette vibrant"></span> Vibrant Flow
+                                </button>
+                                <button class="theme-option" data-palette="ocean">
+                                    <span class="preview-palette ocean"></span> Ocean Breeze
+                                </button>
+                                <button class="theme-option" data-palette="sunset">
+                                    <span class="preview-palette sunset"></span> Sunset Glow
+                                </button>
+                                <button class="theme-option" data-palette="forest">
+                                    <span class="preview-palette forest"></span> Forest Fresh
+                                </button>
+                                <button class="theme-option" data-palette="pastel">
+                                    <span class="preview-palette pastel"></span> Soft Pastel
+                                </button>
+                                <button class="theme-option" data-palette="monochrome">
+                                    <span class="preview-palette monochrome"></span> Slate Minimal
+                                </button>
+                            </div>
+                            <div class="menu-divider"></div>
+                            <div class="menu-header">Selected Node Color</div>
+                            <div class="color-picker-row" id="nodeColorSwatches">
+                                <button class="color-swatch" style="background: #6366f1" data-color="#6366f1" title="Indigo"></button>
+                                <button class="color-swatch" style="background: #3b82f6" data-color="#3b82f6" title="Blue"></button>
+                                <button class="color-swatch" style="background: #06b6d4" data-color="#06b6d4" title="Cyan"></button>
+                                <button class="color-swatch" style="background: #10b981" data-color="#10b981" title="Emerald"></button>
+                                <button class="color-swatch" style="background: #f59e0b" data-color="#f59e0b" title="Amber"></button>
+                                <button class="color-swatch" style="background: #ef4444" data-color="#ef4444" title="Red"></button>
+                                <button class="color-swatch" style="background: #ec4899" data-color="#ec4899" title="Pink"></button>
+                                <button class="color-swatch" style="background: #8b5cf6" data-color="#8b5cf6" title="Purple"></button>
+                                <button class="color-swatch" style="background: #475569" data-color="#475569" title="Slate"></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dropdown-wrapper">
+                        <button id="layoutBtn" class="btn btn-secondary" title="Layout Arrangement">
+                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                            <span>Layout</span>
+                        </button>
+                        <div id="layoutDropdown" class="dropdown-menu">
+                            <button class="menu-item active" data-layout="balanced">
+                                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="3"></circle><line x1="3" y1="12" x2="9" y2="12"></line><line x1="15" y1="12" x2="21" y2="12"></line></svg>
+                                <span>Balanced Mind Map</span>
+                            </button>
+                            <button class="menu-item" data-layout="rightward">
+                                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><circle cx="5" cy="12" r="3"></circle><line x1="8" y1="12" x2="20" y2="12"></line><polyline points="15 7 20 12 15 17"></polyline></svg>
+                                <span>Rightward Tree</span>
+                            </button>
+                            <button class="menu-item" data-layout="downward">
+                                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="5" r="3"></circle><line x1="12" y1="8" x2="12" y2="20"></line><polyline points="7 15 12 20 17 15"></polyline></svg>
+                                <span>Downward Hierarchy</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- Search -->
+                <div class="search-box">
+                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="text" id="searchInput" placeholder="Find node... (Ctrl+F)">
+                    <span id="searchCount" class="search-badge hidden">0/0</span>
+                    <button id="searchPrevBtn" class="search-nav-btn hidden" title="Previous match">▲</button>
+                    <button id="searchNextBtn" class="search-nav-btn hidden" title="Next match">▼</button>
+                </div>
+            </div>
+
+            <div class="top-right">
+                <!-- Templates -->
+                <button id="templatesBtn" class="btn btn-secondary" title="Starter Templates">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                    <span>Templates</span>
+                </button>
+
+                <!-- Export Dropdown -->
+                <div class="dropdown-wrapper">
+                    <button id="exportBtn" class="btn btn-secondary" title="Export mind map">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        <span>Export</span>
+                    </button>
+                    <div id="exportDropdown" class="dropdown-menu align-right">
+                        <button class="menu-item" id="exportPngBtn">
+                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                            <span>Export as PNG Image</span>
+                        </button>
+                        <button class="menu-item" id="exportSvgBtn">
+                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                            <span>Export as Scalable SVG</span>
+                        </button>
+                        <button class="menu-item" id="exportPdfBtn">
+                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                            <span>Export as PDF Document</span>
+                        </button>
+                        <div class="menu-divider"></div>
+                        <button class="menu-item" id="exportJsonBtn">
+                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M8 12h2"></path><path d="M8 16h8"></path></svg>
+                            <span>Save MindFlow (.json)</span>
+                        </button>
+                        <button class="menu-item" id="exportMdBtn">
+                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                            <span>Export Markdown Outline (.md)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Import Dropdown -->
+                <div class="dropdown-wrapper">
+                    <button id="importBtn" class="btn btn-secondary" title="Import mind map">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        <span>Import</span>
+                    </button>
+                    <div id="importDropdown" class="dropdown-menu align-right">
+                        <button class="menu-item" id="importJsonBtn">
+                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                            <span>Open JSON File</span>
+                        </button>
+                        <button class="menu-item" id="importMdBtn">
+                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line></svg>
+                            <span>Import Markdown Outline</span>
+                        </button>
+                        <div class="menu-divider"></div>
+                        <button class="menu-item danger-text" id="resetMapBtn">
+                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
+                            <span>Start New / Blank Map</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Shortcuts Help -->
+                <button id="shortcutsBtn" class="btn btn-icon" title="Keyboard Shortcuts (?)">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                </button>
+
+                <!-- Dark / Light Mode Switcher -->
+                <button id="themeToggleBtn" class="btn btn-icon theme-toggle" title="Toggle Dark/Light Mode">
+                    <!-- Sun icon -->
+                    <svg class="sun-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                    <!-- Moon icon -->
+                    <svg class="moon-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Interactive Canvas Viewport -->
+        <main class="canvas-container" id="canvasContainer">
+            <div class="canvas-viewport" id="canvasViewport">
+                <!-- SVG lines connecting nodes -->
+                <svg class="connections-svg" id="connectionsSvg"></svg>
+                <!-- Rendered DOM nodes -->
+                <div class="nodes-container" id="nodesContainer"></div>
+            </div>
+
+            <!-- Floating Canvas Zoom Bar -->
+            <div class="floating-controls">
+                <button id="zoomInBtn" class="control-btn" title="Zoom In (Ctrl + +)">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
+                <button id="zoomResetBtn" class="control-btn zoom-level" title="Reset Zoom (Ctrl + 0)">100%</button>
+                <button id="zoomOutBtn" class="control-btn" title="Zoom Out (Ctrl + -)">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
+                <div class="control-divider"></div>
+                <button id="fitViewBtn" class="control-btn" title="Fit to Screen">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                </button>
+                <button id="centerViewBtn" class="control-btn" title="Recenter View">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                </button>
+            </div>
+
+            <!-- Floating Quick Stats -->
+            <div class="floating-stats" id="canvasStats">
+                <span id="nodeCountBadge">0 Nodes</span>
+            </div>
+
+            <!-- Bottom Keyboard Hints Bar -->
+            <footer class="bottom-hints">
+                <span><kbd>Tab</kbd> Add Child</span>
+                <span class="hint-sep">•</span>
+                <span><kbd>Enter</kbd> Add Sibling</span>
+                <span class="hint-sep">•</span>
+                <span><kbd>Double-Click</kbd> Edit Text</span>
+                <span class="hint-sep">•</span>
+                <span><kbd>Del</kbd> Delete</span>
+                <span class="hint-sep">•</span>
+                <span><kbd>Drag</kbd> Pan Canvas</span>
+                <span class="hint-sep">•</span>
+                <span><kbd>Scroll</kbd> Zoom</span>
+            </footer>
+        </main>
+    </div>
+
+    <!-- Modals & Overlays -->
+    <!-- Starter Templates Modal -->
+    <div id="templatesModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Choose a Starter Template</h3>
+                <button class="modal-close-btn">&times;</button>
+            </div>
+            <div class="templates-grid">
+                <div class="template-item" data-template="brainstorming">
+                    <div class="template-icon">💡</div>
+                    <h4>Brainstorming & Ideas</h4>
+                    <p>Central topic with problems, solutions, pros/cons, and next steps.</p>
+                </div>
+                <div class="template-item" data-template="project-plan">
+                    <div class="template-icon">🚀</div>
+                    <h4>Project Roadmap</h4>
+                    <p>Structured phases: Discovery, UI/UX, Development, Testing, and Launch.</p>
+                </div>
+                <div class="template-item" data-template="swot">
+                    <div class="template-icon">📊</div>
+                    <h4>SWOT Analysis</h4>
+                    <p>Strengths, Weaknesses, Opportunities, and Threats breakdown.</p>
+                </div>
+                <div class="template-item" data-template="meeting-notes">
+                    <div class="template-icon">📝</div>
+                    <h4>Meeting Notes</h4>
+                    <p>Agenda items, attendee ideas, discussion takeaways, and action items.</p>
+                </div>
+                <div class="template-item" data-template="blank">
+                    <div class="template-icon">✨</div>
+                    <h4>Clean Canvas</h4>
+                    <p>Start fresh with a single customizable central topic node.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Markdown Modal -->
+    <div id="importMdModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Import from Markdown Outline</h3>
+                <button class="modal-close-btn">&times;</button>
+            </div>
+            <p class="modal-subtitle">Paste an indented markdown list (using tabs or 2-4 spaces per level):</p>
+            <textarea id="importMdTextarea" class="import-textarea" placeholder="- Central Project Topic
+  - Research & Ideation
+    - Competitor analysis
+    - User interviews
+  - Execution
+    - Sprint 1: Prototype
+    - Sprint 2: Core Engine
+  - Go to Market
+    - Social Media
+    - Product Hunt launch"></textarea>
+            <div class="modal-actions">
+                <button class="btn btn-secondary modal-cancel-btn">Cancel</button>
+                <button id="submitImportMdBtn" class="btn btn-primary">Create Mind Map</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Keyboard Shortcuts Modal -->
+    <div id="shortcutsModal" class="modal-overlay hidden">
+        <div class="modal-card shortcuts-card">
+            <div class="modal-header">
+                <h3>Keyboard Shortcuts</h3>
+                <button class="modal-close-btn">&times;</button>
+            </div>
+            <div class="shortcuts-table">
+                <div class="shortcut-row">
+                    <span class="shortcut-desc">Add Child Node</span>
+                    <span class="shortcut-key"><kbd>Tab</kbd></span>
+                </div>
+                <div class="shortcut-row">
+                    <span class="shortcut-desc">Add Sibling Node</span>
+                    <span class="shortcut-key"><kbd>Enter</kbd></span>
+                </div>
+                <div class="shortcut-row">
+                    <span class="shortcut-desc">Edit Node Text</span>
+                    <span class="shortcut-key"><kbd>Double Click</kbd> or <kbd>F2</kbd></span>
+                </div>
+                <div class="shortcut-row">
+                    <span class="shortcut-desc">Delete Node & Children</span>
+                    <span class="shortcut-key"><kbd>Delete</kbd> or <kbd>Backspace</kbd></span>
+                </div>
+                <div class="shortcut-row">
+                    <span class="shortcut-desc">Navigate Nodes</span>
+                    <span class="shortcut-key"><kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd></span>
+                </div>
+                <div class="shortcut-row">
+                    <span class="shortcut-desc">Undo / Redo</span>
+                    <span class="shortcut-key"><kbd>Ctrl</kbd> + <kbd>Z</kbd> / <kbd>Ctrl</kbd> + <kbd>Y</kbd></span>
+                </div>
+                <div class="shortcut-row">
+                    <span class="shortcut-desc">Search Map</span>
+                    <span class="shortcut-key"><kbd>Ctrl</kbd> + <kbd>F</kbd></span>
+                </div>
+                <div class="shortcut-row">
+                    <span class="shortcut-desc">Pan Canvas</span>
+                    <span class="shortcut-key"><kbd>Drag Canvas</kbd> or <kbd>Space</kbd> + <kbd>Drag</kbd></span>
+                </div>
+                <div class="shortcut-row">
+                    <span class="shortcut-desc">Zoom Canvas</span>
+                    <span class="shortcut-key"><kbd>Mouse Wheel</kbd> or <kbd>Ctrl</kbd> + <kbd>+/-</kbd></span>
+                </div>
+                <div class="shortcut-row">
+                    <span class="shortcut-desc">Reset Zoom / Fit</span>
+                    <span class="shortcut-key"><kbd>Ctrl</kbd> + <kbd>0</kbd></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Context Menu -->
+    <div id="nodeContextMenu" class="context-menu hidden">
+        <button class="context-item" id="ctxAddChild">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Add Child</span>
+            <kbd>Tab</kbd>
+        </button>
+        <button class="context-item" id="ctxAddSibling">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Add Sibling</span>
+            <kbd>Enter</kbd>
+        </button>
+        <button class="context-item" id="ctxEdit">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            <span>Edit Text</span>
+            <kbd>F2</kbd>
+        </button>
+        <button class="context-item" id="ctxCollapse">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+            <span>Toggle Collapse</span>
+        </button>
+        <div class="menu-divider"></div>
+        <div class="menu-header">Branch Color</div>
+        <div class="context-colors" id="ctxColors">
+            <button class="color-swatch" style="background: #6366f1" data-color="#6366f1"></button>
+            <button class="color-swatch" style="background: #3b82f6" data-color="#3b82f6"></button>
+            <button class="color-swatch" style="background: #06b6d4" data-color="#06b6d4"></button>
+            <button class="color-swatch" style="background: #10b981" data-color="#10b981"></button>
+            <button class="color-swatch" style="background: #f59e0b" data-color="#f59e0b"></button>
+            <button class="color-swatch" style="background: #ef4444" data-color="#ef4444"></button>
+            <button class="color-swatch" style="background: #8b5cf6" data-color="#8b5cf6"></button>
+        </div>
+        <div class="menu-divider"></div>
+        <button class="context-item danger-text" id="ctxDelete">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            <span>Delete Node</span>
+            <kbd>Del</kbd>
+        </button>
+    </div>
+
+    <!-- Hidden File Input for JSON Import -->
+    <input type="file" id="jsonFileInput" accept=".json" style="display: none;">
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>

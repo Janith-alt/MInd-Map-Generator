@@ -1,0 +1,14 @@
+# OS & Editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.log
+
+# Backups
+backup_original/
+*.bak
+
+# Node & Temp
+node_modules/
+.vscode/
+.idea/
