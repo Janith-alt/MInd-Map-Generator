@@ -1,4 +1,4 @@
-# MindFlow 🧠✨
+# MindFlow 
 
 A modern, fast, and interactive Mind Map Generator built with pure vanilla HTML, CSS, and JavaScript. Zero external dependencies required to run!
 
